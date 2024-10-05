@@ -10,6 +10,7 @@ ABoidManager::ABoidManager()
 void ABoidManager::ComputeAvoidanceRays()
 {
 	// https://stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere/44164075#44164075
+	// these rays are in world space, so boids will need to rotate them to local
 
 	float GoldenRatio = (1 + FMath::Sqrt(5.0)) / 2;
 	float AngleIncrement = PI * 2 * GoldenRatio;

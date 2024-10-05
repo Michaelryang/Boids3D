@@ -2,6 +2,8 @@
 
 
 #include "MarchingCubesWorld.h"
+#include "MarchingCubesComponent.h"
+#include "Components/BoxComponent.h"
 
 // Sets default values
 AMarchingCubesWorld::AMarchingCubesWorld()

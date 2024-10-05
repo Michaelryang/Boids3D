@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -23,8 +21,8 @@ class BOIDS3D_API ABoidManager : public AActor
 public:
 	ABoidManager();
 private:
-	TArray<FVector> AvoidanceRays; // Array of sphere packing rays. These are in local space.
-
+	// Array of sphere packing rays. These are in world space.
+	TArray<FVector> AvoidanceRays; 
 	void ComputeAvoidanceRays();
 protected:
 	virtual void BeginPlay() override;

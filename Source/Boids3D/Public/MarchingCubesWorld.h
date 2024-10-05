@@ -3,10 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "MarchingCubesComponent.h"
-#include "Components/BoxComponent.h"
 #include "GameFramework/Actor.h"
 #include "MarchingCubesWorld.generated.h"
+
+class UMarchingCubesComponent;
+class UBoxComponent;
 
 USTRUCT(BlueprintType)
 struct FChunkMapData {

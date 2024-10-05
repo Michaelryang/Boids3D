@@ -116,7 +116,6 @@ public:
 	UPROPERTY(EditAnywhere)
 	bool ShowPointsBelowThreshold = false;
 
-	// in worldspace
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FVector3f MinCornerWorldSpace = FVector3f::Zero();
 

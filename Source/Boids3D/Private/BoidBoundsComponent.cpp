@@ -8,15 +8,12 @@
 UBoidBoundsComponent::UBoidBoundsComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	
 }
 
 
 void UBoidBoundsComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	//BoxComponent->SetupAttachment(GetAttachmentRoot());
 }
 
 

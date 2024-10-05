@@ -1,21 +1,16 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Boid.h"
 #include "Components/BoxComponent.h"
+#include "BoidBoundsComponent.h"
+#include "BoidContainer.h"
+#include "BoidManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 
-// Sets default values
 ABoid::ABoid()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	//ObstacleAvoidanceComponent = CreateDefaultSubobject<UBoidAvoidanceComponent>(TEXT("ObstacleAvoidanceComponent"));
-	//ObstacleAvoidanceComponent->SetupAttachment(RootComponent);
 }
 
-// Called when the game starts or when spawned
 void ABoid::BeginPlay()
 {
 	Super::BeginPlay();
@@ -145,30 +140,17 @@ void ABoid::DebugAvoidance()
 	for (int x = 0; x < Rays.Num(); ++x)
 	{
 		float color = 255.0 * static_cast<float>(x) / static_cast<float>(Rays.Num());
-		//FColor RayColor = FColor(color, color, color);
-		/*if (x > Rays.Num() / 4)
-		{
-			RayColor.G = 0;
-			RayColor.B = 0;
-			RayColor.R = 255;
-		}
-		if (x > Rays.Num() / 2)
-		{
-			RayColor.R = 0;
-			RayColor.G = 255;
-			RayColor.B = 0;
-		}
-		*/
+
 		FVector WorldSpaceRay = GetTransform().GetRotation().RotateVector(Rays[x]);
 		float Angle = FMath::Acos(FVector::DotProduct(WorldSpaceRay, GetActorForwardVector()));
 
 		if ( FMath::RadiansToDegrees(Angle) < BoidManager->ViewAngle)
 		{
-			DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + WorldSpaceRay * BoidManager->AvoidanceViewDistance, FColor::Green);//RayColor);
+			DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + WorldSpaceRay * BoidManager->AvoidanceViewDistance, FColor::Green);
 		}
 		else
 		{
-			DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + WorldSpaceRay * BoidManager->AvoidanceViewDistance, FColor::Red);//RayColor);
+			DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + WorldSpaceRay * BoidManager->AvoidanceViewDistance, FColor::Red);
 		}
 	}
 }
@@ -223,6 +205,8 @@ FVector ABoid::CalculateCohesionHeading(TArray<TObjectPtr<ABoid>>& Neighbors)
 
 FVector ABoid::CalculateObstacleAvoidance()
 {
+	// avoidance rays are at increasing angles from the boid forward direction.
+	// the idea is to iterate until a raycast doesn't intersect with an obstacle, and then steer in that direction.
 	TArray<FVector> Rays = BoidManager->GetAvoidanceRays();
 
 	FHitResult HitResult;
@@ -237,7 +221,9 @@ FVector ABoid::CalculateObstacleAvoidance()
 
 	for (int x = 0; x < Rays.Num(); ++x)
 	{
+		// match rotation of ray to boid rotation
 		FVector WorldSpaceRay = GetTransform().GetRotation().RotateVector(Rays[x]);
+
 		float Angle = FMath::Acos(FVector::DotProduct(WorldSpaceRay, GetActorForwardVector()));
 
 		if (FMath::RadiansToDegrees(Angle) < BoidManager->ViewAngle)
@@ -252,6 +238,7 @@ FVector ABoid::CalculateObstacleAvoidance()
 					DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + WorldSpaceRay * HitResult.Distance, FColor::Yellow, false, 1.0, 2.0);
 				}
 
+				// if an obstacle is too close, the avoidance force should be stronger
 				if (HitResult.Distance < BoidManager->CloseProximityObstacleRadius)
 				{
 					if (DebugAvoidanceInfo)
@@ -266,8 +253,6 @@ FVector ABoid::CalculateObstacleAvoidance()
 				{
 					BestDirection = WorldSpaceRay;
 					FurthestUnobstructedDistance = HitResult.Distance;
-
-					
 				}
 			}
 			else
@@ -296,7 +281,7 @@ void ABoid::Tick(float DeltaTime)
 
 	if (DebugAvoidanceInfo)
 	{
-		//DebugAvoidance();
+		DebugAvoidance();
 	}
 
 	if (FreezeMovement)
@@ -308,7 +293,7 @@ void ABoid::Tick(float DeltaTime)
 	TArray<TObjectPtr<ABoid>> SeparationNeighbors;
 	TArray<TObjectPtr<ABoid>> AlignmentNeighbors;
 	TArray<TObjectPtr<ABoid>> CohesionNeighbors;
-
+	
 	if (BoidManager)
 	{
 		FullNeighborsSet = BoidManager->GetNeighbors(this, BoidManager->MaxSearchRadius());
