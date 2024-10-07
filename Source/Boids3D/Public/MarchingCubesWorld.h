@@ -4,10 +4,27 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "MarchingCubesComponent.h"
 #include "MarchingCubesWorld.generated.h"
 
 class UMarchingCubesComponent;
 class UBoxComponent;
+
+class FWorldChunkThread : public FMarchingCubesThread {
+public:
+	FWorldChunkThread(int Index)
+	{
+		ThreadIndex = Index;
+		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("FWorldChunkThread Started")));
+		Thread = FRunnableThread::Create(this, TEXT("ChunkThread"));
+	}
+
+	virtual uint32 Run() override;
+	int ThreadIndex;
+	FIntVector2 Coords;
+	AMarchingCubesWorld* MCWorld;
+	void StartCompute(UMarchingCubesComponent* InMarchingCubesComponent, AMarchingCubesWorld* InWorld, FIntVector2 InCoords);
+};
 
 USTRUCT(BlueprintType)
 struct FChunkMapData {
@@ -48,6 +65,8 @@ public:
 
 	// CenterPosition is the central position from which the correct chunks will be determined
 	void UpdateChunks(FVector CenterPosition);
+	void AddToComputedChunkQueue(FIntVector2 Coords, UMarchingCubesComponent* Chunk, int ThreadIndex);
+	//virtual void BeginDestroy() override;
 
 	UPROPERTY(EditAnywhere, Category=WorldConfig)
 	int ViewDistance = 1; // manhattan distance to chunk (for now)
@@ -63,5 +82,16 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	TObjectPtr<class UMarchingCubesComponent> MarchingCubesComponent;
+
+	// threads will do the computation from this queue
+	TQueue<TPair<FIntVector2, UMarchingCubesComponent*>> ToComputeChunkQueue;
+
+	// threads will add computed data to this queue
+	TQueue<TPair<FIntVector2, UMarchingCubesComponent*>> ComputedChunkQueue;
+
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int NumChunkThreads = 8;
+	TArray<TPair<bool, FWorldChunkThread*>> ChunkThreads;
 };
  
