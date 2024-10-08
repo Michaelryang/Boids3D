@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -12,17 +10,19 @@ class UBoxComponent;
 
 class FWorldChunkThread : public FMarchingCubesThread {
 public:
-	FWorldChunkThread(int Index)
+	// explicit call FMarchingCubesThread(false) to prevent multiple threads from being created
+	FWorldChunkThread(int Index) : FMarchingCubesThread(false)
 	{
 		ThreadIndex = Index;
-		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("FWorldChunkThread Started")));
-		Thread = FRunnableThread::Create(this, TEXT("ChunkThread"));
+		Thread = FRunnableThread::Create(this, TEXT("WorldChunkThread"));
 	}
 
-	virtual uint32 Run() override;
+	bool Init();
+	uint32 Run();
 	int ThreadIndex;
-	FIntVector2 Coords;
-	AMarchingCubesWorld* MCWorld;
+	FIntVector2 Coords = FIntVector2::ZeroValue;
+	AMarchingCubesWorld* MCWorld = nullptr;
+	void StartCompute(UMarchingCubesComponent* InMarchingCubesComponent);
 	void StartCompute(UMarchingCubesComponent* InMarchingCubesComponent, AMarchingCubesWorld* InWorld, FIntVector2 InCoords);
 };
 
@@ -40,6 +40,7 @@ public:
 
 	TMap<FIntVector2, UMarchingCubesComponent*> ChunkMap;
 
+	// this is for debugging purposes to show where chunk boundaries are
 	UPROPERTY(VisibleAnywhere)
 	TMap<FIntVector2, UBoxComponent*> ChunkBoxMap;
 };
@@ -50,23 +51,19 @@ class BOIDS3D_API AMarchingCubesWorld : public AActor
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
 	AMarchingCubesWorld();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	FIntVector2 ChunkCoordinatesFromWorldPos(FVector CenterPosition);
 
-	FIntVector2 PlayerCoords;
+	FIntVector2 PlayerCoords = FIntVector2::ZeroValue;
 public:	
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// CenterPosition is the central position from which the correct chunks will be determined
+	// CenterPosition is the center of the currently rendered chunks
 	void UpdateChunks(FVector CenterPosition);
 	void AddToComputedChunkQueue(FIntVector2 Coords, UMarchingCubesComponent* Chunk, int ThreadIndex);
-	//virtual void BeginDestroy() override;
 
 	UPROPERTY(EditAnywhere, Category=WorldConfig)
 	int ViewDistance = 1; // manhattan distance to chunk (for now)
@@ -89,7 +86,7 @@ public:
 	// threads will add computed data to this queue
 	TQueue<TPair<FIntVector2, UMarchingCubesComponent*>> ComputedChunkQueue;
 
-
+	// the key value in the array tracks whether we can assign a new chunk to a thread
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int NumChunkThreads = 8;
 	TArray<TPair<bool, FWorldChunkThread*>> ChunkThreads;

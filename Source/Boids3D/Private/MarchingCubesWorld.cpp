@@ -108,23 +108,8 @@ void FChunkMapData::SpawnChunk(int x, int y, AMarchingCubesWorld* ParentActor)
 	NewChunk->Scale = 400;
 	NewChunk->SetRelativeLocation(FVector(x * Extents.X * 2, y * Extents.Y * 2, 0.0));
 	NewChunk->InitVoxelBounds(WorldPositionOrigin + FVector(x * Extents.X * 2, y * Extents.Y * 2, 0.0), WorldPositionOrigin + FVector(x * Extents.X * 2, y * Extents.Y * 2, 0.0) + Extents * 2);
-	//NewChunk->ComputeVoxelGrid();
-	/*(URealtimeMeshSimple * RMC,
-		UMarchingCubesComponent * ParentComponent,
-		FVector3f ScaledBoxExtents,
-		float CubeSize,
-		float Scale,
-		float SurfaceLevelThreshold,
-		bool ShowPointsBelowThreshold,
-		FVector3f MinCornerWorldSpace,
-		FVector3f MaxCornerWorldSpace,
-		UMaterialInterface * MarchingCubesMaterial,
-		FContinuousBounds ContinuousBounds)*/
-	
-	//auto* Thread = new FMarchingCubesThread(NewChunk);
+
 	ParentActor->ToComputeChunkQueue.Enqueue(TPair<FIntVector2, UMarchingCubesComponent*>(FIntVector2(x, y), NewChunk));
-	//NewChunk->ComputeMarchingCubes();
-	//ChunkMap.Add(FIntVector2(x, y), NewChunk);
 }
 
 void FChunkMapData::DeleteChunksOutOfRange(int x, int y, int ViewDistance, AMarchingCubesWorld* ParentActor)
@@ -181,21 +166,21 @@ void AMarchingCubesWorld::AddToComputedChunkQueue(FIntVector2 Coords, UMarchingC
 	ChunkThreads[ThreadIndex].Key = false;
 }
 
-//void AMarchingCubesWorld::BeginDestroy()
-//{
-//	Super::BeginDestroy();
-//	
-//	for (int x = 0; x < NumChunkThreads; ++x)
-//	{
-//		ChunkThreads[x].Value->bShutdown = true;
-//	}
-//}
+void FWorldChunkThread::StartCompute(UMarchingCubesComponent* InMarchingCubesComponent)
+{
+	FMarchingCubesThread::StartCompute(InMarchingCubesComponent);
+}
 
 void FWorldChunkThread::StartCompute(UMarchingCubesComponent* InMarchingCubesComponent, AMarchingCubesWorld* InWorld, FIntVector2 InCoords)
 {
-	FMarchingCubesThread::StartCompute(InMarchingCubesComponent);
 	Coords = InCoords;
 	MCWorld = InWorld;
+	StartCompute(InMarchingCubesComponent);
+}
+
+bool FWorldChunkThread::Init()
+{
+	return true;
 }
 
 uint32 FWorldChunkThread::Run()
@@ -205,7 +190,7 @@ uint32 FWorldChunkThread::Run()
 	{
 		if (!bIsComputing)
 		{
-			FPlatformProcess::Sleep(0.3);
+			FPlatformProcess::Sleep(0.01);
 		}
 		else
 		{
@@ -220,7 +205,6 @@ uint32 FWorldChunkThread::Run()
 
 			bIsComputing = false;
 			//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Thread Computation finished for %d %d"), Coords.X, Coords.Y));
-
 		}
 		
 	}
